@@ -1,0 +1,627 @@
+<html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>
+
+<div id="container">
+  <div id="results-container" style="display: none"></div>
+</div>
+
+<button class="render-choices-button" id="render-choices-button" onclick="renderChoices()">Make my chart</button>
+
+
+<style>
+  .link {
+    margin-left: 5px;
+    font-size: 8px;
+  }
+
+  .render-choices-button,
+  .generate-pdf-button {
+    background-color: rgb(240, 178, 0);
+    border-radius: 100px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: block;
+    font-size: 20px;
+    height: 50px;
+    margin: 20px auto;
+    width: 226px;
+  }
+
+  .section-container,
+  .result-line-container,
+  .table-header-container {
+    border-bottom: 2px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .table-header-container {
+    font-weight: bold;
+    height: 40px;
+  }
+
+  .table-header-ascending,
+  .table-header-descending {
+    background-color: #ccc;
+    border-left: 2px solid #eee;
+  }
+
+  .section-title,
+  .result-title,
+  .result-song-cell,
+  .table-header-interval,
+  .table-header-ascending,
+  .table-header-descending {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .result-title,
+  .section-title,
+  .table-header-interval {
+    width: 30%;
+  }
+
+  .result-line-container {
+    height: 50px;
+  }
+
+  .song-container {
+    position: fixed;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .songs-container,
+  .result-song-cell {
+    border-left: 2px solid #eee;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 0;
+    width: 100%;
+  }
+
+  .songs-container input[type="radio"]:checked+label {
+    background-color: rgb(240, 178, 0);
+  }
+
+  .songs-container label {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 26px;
+    text-align: center;
+    touch-action: manipulation;
+  }
+
+  .songs-container label:hover {
+    background-color: #f0e6c9;
+  }
+</style>
+
+<script type="text/javascript">
+  const ASCENDING = 'ascending';
+  const DESCENDING = 'descending';
+
+  const MINOR_2ND = 'm2';
+  const MAJOR_2ND = 'M2';
+  const MINOR_3RD = 'm3';
+  const MAJOR_3RD = 'M3';
+  const PERFECT_4TH = 'p4';
+  const TRITONE = 'tt';
+  const PERFECT_5TH = 'p5';
+  const MINOR_6TH = 'm6';
+  const MAJOR_6TH = 'M6';
+  const MINOR_7TH = 'm7';
+  const MAJOR_7TH = 'M7';
+  const PERFECT_8TH = 'P8';
+
+  const INTERVALS = [
+    MINOR_2ND,
+    MAJOR_2ND,
+    MINOR_3RD,
+    MAJOR_3RD,
+    PERFECT_4TH,
+    TRITONE,
+    PERFECT_5TH,
+    MINOR_6TH,
+    MAJOR_6TH,
+    MINOR_7TH,
+    MAJOR_7TH,
+    PERFECT_8TH,
+  ]
+
+  const MINOR_2ND_ASCENDING_SONGS = [
+    { title: 'A Hard Days Night (The Beatles)', },
+    { title: 'Isn’t She Lovely (Stevie Wonder)', },
+    { title: 'Jaws (John Williams)', },
+    { title: 'Nice Work If You Can Get It', },
+    { title: 'Ode to Joy', },
+    { title: 'The Pink Panther (Mancini)', },
+    { title: 'As Time Goes By (Casablanca)', },
+    { title: 'White Christmas (Irving Berlin)', },
+  ];
+
+  const MINOR_2ND_DESCENDING_SONGS = [
+    { title: 'All My Loving (The Beatles)', },
+    { title: 'Fly Me to the Moon (Frank Sinatra)', },
+    { title: 'Für Elise (Beethoven)', },
+    { title: 'Joy to the World', },
+    { title: 'O Little Town of Bethlehem', },
+    { title: 'Shall We Dance (The King and I)', },
+    { title: 'Stella by Starlight', },
+    { title: 'Wedding March (Mendelssohn)', },
+    { title: 'Wonderwall (Oasis)', },
+  ];
+
+  const MAJOR_2ND_ASCENDING_SONGS = [
+    { title: 'Frère Jacques', },
+    { title: 'Happy Birthday', },
+    { title: 'Linus and Lucy (Vince Guaraldi)', },
+    { title: 'Never Gonna Give You Up (Rick Astley)', },
+    { title: 'Rudolph the Red - Nosed Reindeer', },
+    { title: 'Silent Night', },
+  ];
+
+  const MAJOR_2ND_DESCENDING_SONGS = [
+    { title: 'Mary Had a Little Lamb', },
+    { title: 'Mamma Mia! (ABBA)', },
+    { title: 'So What (Miles Davis)', },
+    { title: 'The First Noel', },
+    { title: 'Three Blind Mice', },
+    { title: 'Yesterday (The Beatles)', },
+  ];
+
+  const MINOR_3RD_ASCENDING_SONGS = [
+    { title: 'Georgia on My Mind (Hoagy Carmichael)', },
+    { title: 'Greensleeves', },
+    { title: 'Iron Man (Black Sabbath)', },
+    { title: 'Lullaby (Brahms)', },
+    { title: 'O Canada', },
+    { title: 'Seven Nation Army (The White Stripes)', },
+    { title: 'So Long Farewell (Sound of Music)', },
+    { title: 'What the World Needs Now (Burt Bacharach)', },
+  ];
+  const MINOR_3RD_DESCENDING_SONGS = [
+    { title: 'Barney & Friends Theme', },
+    { title: 'Can You Feel the Love Tonight ? (Elton John)', },
+    { title: 'Frosty the Snowman', },
+    { title: 'Hey Jude (The Beatles)', },
+    { title: 'Misty (Erroll Garner)', },
+    { title: 'Star - Spangled Banner', },
+    { title: 'This Old Man', },
+  ];
+  const MAJOR_3RD_ASCENDING_SONGS = [
+    { title: 'Can’t Buy Me Love (The Beatles)', },
+    { title: 'Four Seasons - Spring (Vivaldi)', },
+    { title: 'Have Yourself a Merry Little Xmas', },
+    // { title: 'I Can’t Get Started (Duke Ellington)', },
+    { title: 'I Can’t Get Started (Vernon Duke)', },
+    { title: 'I Could Have Danced All Night (My Fair Lady)', },
+    { title: 'Kumbayah', },
+    { title: 'Ob - la - di Ob - la - da (The Beatles)', },
+    { title: 'When the Saints', },
+  ];
+  const MAJOR_3RD_DESCENDING_SONGS = [
+    { title: 'Fifth Symphony (Beethoven)', },
+    { title: 'Giant Steps (John Coltrane)', },
+    { title: 'If I Were a Bell (Guys and Dolls)', },
+    { title: 'Summertime (Gershwin)', },
+    { title: 'Swing Low, Sweet Chariot', },
+    { title: 'Tears in Heaven (Eric Clapton)', },
+  ];
+  const PERFECT_4TH_ASCENDING_SONGS = [
+    { title: 'Amazing Grace', },
+    { title: 'Auld Lang Syne', },
+    { title: 'Harry Potter Theme (John Williams)', },
+    { title: 'Here Comes the Bride (Wagner)', },
+    { title: 'Jeopardy Theme', },
+    { title: 'O Christmas Tree', },
+    { title: 'Someday My Prince Will Come', },
+    { title: 'Taps', },
+  ];
+  const PERFECT_4TH_DESCENDING_SONGS = [
+    { title: 'All of Me (Gerald Marks)', },
+    { title: 'Eine Kleine Nachtmusik (Mozart)', },
+    { title: 'Hallelujah (Handel)', },
+    { title: 'Oh Come All Ye Faithful', },
+    { title: 'Shave and a Haircut', },
+    { title: 'Softly, As in a Morning Sunrise', },
+  ];
+  const TRITONE_ASCENDING_SONGS = [
+    { title: 'Cool (West Side Story)', },
+    { title: 'Isotope (Joe Henderson)', },
+    { title: 'Maria (West Side Story)', },
+    { title: 'The Munsters Theme', },
+    { title: 'The Simpsons', },
+  ];
+  const TRITONE_DESCENDING_SONGS = [
+    { title: 'Black Sabbath (Black Sabbath)', },
+    { title: 'Blue Seven (Sonny Rollins)', },
+    { title: 'Danse Macabre (Saint - Saëns)', },
+    { title: 'Enter Sandman (Metallica)', },
+    { title: 'Even Flow (Pearl Jam)', },
+    { title: 'I Hope I Get It (A Chorus Line)', },
+    { title: 'The Twilight Zone Theme', },
+    { title: 'The Simpsons', },
+    { title: 'YYZ (Rush)', },
+  ];
+  const PERFECT_5TH_ASCENDING_SONGS = [
+    { title: 'Blackbird (The Beatles)', },
+    { title: 'Blue Skies (Irving Berlin)', },
+    { title: 'Can’t Help Falling in Love (Elvis Presley)', },
+    { title: 'God Rest Ye Merry Gentlemen', },
+    { title: 'My Favorite Things', },
+    { title: 'Star Wars Theme (John Williams)', },
+    { title: 'Twinkle Twinkle / ABC', },
+    { title: 'Whisper Not (Benny Golson)', },
+    { title: 'Yeah (Usher)', },
+  ];
+  const PERFECT_5TH_DESCENDING_SONGS = [
+    { title: 'Flinstones Theme', },
+    { title: 'Game of Thrones', },
+    { title: 'It Don’t Mean a Thing (Duke Ellington)', },
+    { title: 'Minuet in G (Bach)', },
+    { title: 'The Way You Look Tonight', },
+  ];
+  const MINOR_6TH_ASCENDING_SONGS = [
+    { title: 'Black Orpheus (Theme)', },
+    { title: 'The Entertainer (Joplin)', },
+    { title: 'Go Down Moses', },
+    { title: 'In My Life (The Beatles)', },
+    { title: 'Waltz in C# minor Op. 64, No. 2 (Chopin)', },
+    { title: 'We Are Young (Fun)', },
+  ];
+  const MINOR_6TH_DESCENDING_SONGS = [
+    { title: '12 Days of Christmas ("…three French hens")', },
+    { title: '100 Years (Five For Fighting)', },
+    { title: 'Call Me Maybe (Carly Rae Jepsen)', },
+    { title: 'Chega de Saudade (Jobim)', },
+    { title: 'Love Story Theme', },
+    { title: 'Take the A Train (ending)', },
+  ];
+  const MAJOR_6TH_ASCENDING_SONGS = [
+    { title: 'The Days of Wine and Roses (Mancini)', },
+    { title: 'Jingle Bells', },
+    { title: 'My Way (Frank Sinatra)', },
+    { title: 'Nocturne in Eb (Chopin)', },
+    { title: 'NBC Theme', },
+    { title: 'Take the A Train (Billy Strayhorn)', },
+  ];
+  const MAJOR_6TH_DESCENDING_SONGS = [
+    { title: 'Crazy (Patsy Cline / Willie Nelson)', },
+    { title: 'Down by the Riverside', },
+    { title: 'Nobody Knows the Trouble I’ve Seen', },
+    { title: 'Man in the Mirror (Michael Jackson)', },
+    { title: 'Music of the Night (Phantom of the Opera)', },
+    { title: 'No Surprises (Radiohead)', },
+    { title: 'Sweet Caroline (Neil Diamond)', },
+    { title: 'You’re a Weaver of Dreams', },
+  ];
+  const MINOR_7TH_ASCENDING_SONGS = [
+    { title: 'Chameleon (Herbie Hancock)', },
+    { title: 'No Sé Tú (Luis Miguel)', },
+    { title: 'Somewhere (West Side Story)', },
+    { title: 'Star Trek Theme', },
+    { title: 'The Winner Takes It All (ABBA)', },
+  ];
+  const MINOR_7TH_DESCENDING_SONGS = [
+    { title: 'An American in Paris (Gershwin)', },
+    { title: 'Lady Jane (The Rolling Stones)', },
+    { title: 'None But the Lonely Heart (Tchaikovsky)', },
+    { title: 'The Shadow of Your Smile (The Sandpiper)', },
+    { title: 'Something Wonderful (The King and I)', },
+    { title: 'Watermelon Man (Herbie Hancock)', },
+    { title: 'White Christmas ("…and may all your Christmases be white")', },
+  ];
+  const MAJOR_7TH_ASCENDING_SONGS = [
+    { title: 'Cast Your Fate to the Wind (Vince Guaraldi)', },
+    { title: 'Ceora (Lee Morgan)', },
+    { title: 'Don’t Know Why (Norah Jones)', },
+    { title: 'Popular (Nada Surf)', },
+    { title: 'Superman Theme', },
+    { title: 'Take On Me (A - ha)', },
+  ];
+  const MAJOR_7TH_DESCENDING_SONGS = [
+    { title: 'All by Myself (Celine Dion)', },
+    { title: 'Have Yourself a Merry Little Christmas', },
+    { title: 'I Love You (Cole Porter)', },
+    { title: 'I’m With You (Avril Lavigne)', },
+    { title: 'Maybe (Brainstorm)', },
+    { title: 'Pictures at an Exhibition (Mussorgsky) — The Hut on Fowl’s Legs', },
+    { title: 'Sunny Came Home (Shawn Colvin)', },
+  ];
+  const PERFECT_8TH_ASCENDING_SONGS = [
+    { title: 'The Christmas Song(Nat King Cole / Mel Tormé)', },
+    { title: 'Blue Bossa(Kenny Dorham)', },
+    { title: 'Let It Snow', },
+    { title: 'My Sharona(The Knack)', },
+    { title: 'Singin’ in the Rain', },
+    { title: 'Somewhere Over the Rainbow(The Wizard of Oz)', },
+    { title: 'Starman(David Bowie)', },
+    { title: 'Sweet Child O’ Mine(Guns N’ Roses)', },
+    { title: 'When You Wish Upon a Star', },
+  ];
+  const PERFECT_8TH_DESCENDING_SONGS = [
+    { title: 'Bulls on Parade(Rage Against the Machine)', },
+    { title: 'My Sharona(The Knack)', },
+    { title: 'Nessun Dorma from Turandot(Puccini)', },
+    { title: 'Salt Peanuts(Dizzy Gillespie)', },
+    { title: 'Someone to Watch Over Me(Gershwin)', },
+    { title: 'Willow Weep for Me', },
+    { title: 'Doogie Howser M.D.Theme', },
+  ];
+
+  const SECTION_DATA = new Map(Object.entries({
+    [MINOR_2ND]: {
+      title: 'Minor 2nd',
+      songs: {
+        [ASCENDING]: MINOR_2ND_ASCENDING_SONGS,
+        [DESCENDING]: MINOR_2ND_DESCENDING_SONGS,
+      },
+    },
+    [MAJOR_2ND]: {
+      title: 'Major 2nd',
+      songs: {
+        [ASCENDING]: MAJOR_2ND_ASCENDING_SONGS,
+        [DESCENDING]: MAJOR_2ND_DESCENDING_SONGS,
+      },
+    },
+    [MINOR_3RD]: {
+      title: 'Minor 3rd',
+      songs: {
+        [ASCENDING]: MINOR_3RD_ASCENDING_SONGS,
+        [DESCENDING]: MINOR_3RD_DESCENDING_SONGS,
+      },
+    },
+    [MAJOR_3RD]: {
+      title: 'Major 3rd',
+      songs: {
+        [ASCENDING]: MAJOR_3RD_ASCENDING_SONGS,
+        [DESCENDING]: MAJOR_3RD_DESCENDING_SONGS,
+      },
+    },
+    [PERFECT_4TH]: {
+      title: 'Perfect 4th',
+      songs: {
+        [ASCENDING]: PERFECT_4TH_ASCENDING_SONGS,
+        [DESCENDING]: PERFECT_4TH_DESCENDING_SONGS,
+      },
+    },
+    [TRITONE]: {
+      title: 'Tritone',
+      songs: {
+        [ASCENDING]: TRITONE_ASCENDING_SONGS,
+        [DESCENDING]: TRITONE_DESCENDING_SONGS,
+      },
+    },
+    [PERFECT_5TH]: {
+      title: 'Perfect 5th',
+      songs: {
+        [ASCENDING]: PERFECT_5TH_ASCENDING_SONGS,
+        [DESCENDING]: PERFECT_5TH_DESCENDING_SONGS,
+      },
+    },
+    [MINOR_6TH]: {
+      title: 'Minor 6th',
+      songs: {
+        [ASCENDING]: MINOR_6TH_ASCENDING_SONGS,
+        [DESCENDING]: MINOR_6TH_DESCENDING_SONGS,
+      },
+    },
+    [MAJOR_6TH]: {
+      title: 'Major 6th',
+      songs: {
+        [ASCENDING]: MAJOR_6TH_ASCENDING_SONGS,
+        [DESCENDING]: MAJOR_6TH_DESCENDING_SONGS,
+      },
+    },
+    [MINOR_7TH]: {
+      title: 'Minor 7th',
+      songs: {
+        [ASCENDING]: MINOR_7TH_ASCENDING_SONGS,
+        [DESCENDING]: MINOR_7TH_DESCENDING_SONGS,
+      },
+    },
+    [MAJOR_7TH]: {
+      title: 'Major 7th',
+      songs: {
+        [ASCENDING]: MAJOR_7TH_ASCENDING_SONGS,
+        [DESCENDING]: MAJOR_7TH_DESCENDING_SONGS,
+      },
+    },
+    [PERFECT_8TH]: {
+      title: 'Perfect 8th',
+      songs: {
+        [ASCENDING]: PERFECT_8TH_ASCENDING_SONGS,
+        [DESCENDING]: PERFECT_8TH_DESCENDING_SONGS,
+      },
+    },
+  }));
+
+  function createSongContainer(song) {
+    const songContainer = document.createElement('input');
+    songContainer.setAttribute('type', 'radio');
+    songContainer.setAttribute('name', `${song.interval}-${song.direction}`);
+    songContainer.setAttribute('value', JSON.stringify(song));
+    songContainer.setAttribute('id', song.title);
+    songContainer.classList.add('song-container');
+    return songContainer;
+  }
+
+  function createSongsGroup(songs) {
+    const songsContainer = document.createElement('div');
+    songsContainer.classList.add('songs-container');
+    for (const song of songs) {
+      const songContainer = createSongContainer(song);
+      songsContainer.appendChild(songContainer);
+
+      const label = document.createElement('label');
+      label.innerText = song.title;
+      label.setAttribute('for', songContainer.id);
+      songsContainer.appendChild(label);
+
+      const link = document.createElement('a');
+      link.setAttribute('href', `https://google.com/search?q=${song.title}`);
+      link.setAttribute('target', '_blank');
+      link.classList.add('link');
+      link.innerText = 'link';
+
+      label.appendChild(link);
+
+      songsContainer.appendChild(label);
+    }
+    return songsContainer;
+  }
+
+  function createIntervalSection(interval) {
+    const container = document.createElement('div');
+    container.classList.add('section-container');
+
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('section-title');
+    titleDiv.innerText = SECTION_DATA.get(interval).title;
+
+    const ascendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.ascending);
+    const descendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.descending);
+
+    container.appendChild(titleDiv);
+    container.appendChild(ascendingSongsGroup);
+    container.appendChild(descendingSongsGroup);
+
+    return container;
+  }
+
+  function getResultValues() {
+    const radioInputs = Array.from(document.querySelectorAll('input[type="radio"]:checked'));
+    return radioInputs.map(ri => ri.value);
+  }
+
+  function getResultSongs() {
+    const radioInputs = Array.from(document.querySelectorAll('input[type="radio"]:checked'));
+    const res = {};
+    for (const input of radioInputs) {
+      const song = JSON.parse(input.value);
+      res[`${song.interval}-${song.direction}`] = song;
+    }
+    return res;
+  }
+
+  function createResultLine(interval, ascendingSong, descendingSong) {
+    const container = document.createElement('div');
+    container.classList.add('result-line-container');
+
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('result-title');
+    titleDiv.innerText = SECTION_DATA.get(interval).title;
+
+    const ascendingSongCell = document.createElement('div');
+    ascendingSongCell.classList.add('result-song-cell');
+    if (ascendingSong) {
+      ascendingSongCell.innerText = ascendingSong.title;
+    }
+
+    const descendingSongCell = document.createElement('div');
+    descendingSongCell.classList.add('result-song-cell');
+    if (descendingSong) {
+      descendingSongCell.innerText = descendingSong.title;
+    }
+
+    container.appendChild(titleDiv);
+    container.appendChild(ascendingSongCell);
+    container.appendChild(descendingSongCell);
+
+    return container;
+  }
+
+  function populateSongAttributes() {
+    for (const [interval, section] of SECTION_DATA) {
+      for (const song of section.songs[ASCENDING]) {
+        song.interval = interval;
+        song.direction = ASCENDING;
+      }
+      for (const song of section.songs[DESCENDING]) {
+        song.interval = interval;
+        song.direction = DESCENDING;
+      }
+    }
+  }
+
+  function renderChoices() {
+    const resultsContainer = document.getElementById('results-container');
+    resultsContainer.appendChild(createTableHeader());
+
+    const resultSongs = getResultSongs();
+    for (const interval of INTERVALS) {
+      const ascendingSong = resultSongs[`${interval}-${ASCENDING}`];
+      const descendingSong = resultSongs[`${interval}-${DESCENDING}`];
+      const resultLine = createResultLine(interval, ascendingSong, descendingSong);
+      resultsContainer.appendChild(resultLine);
+    }
+
+    const generatePdfButton = document.createElement('button');
+    generatePdfButton.innerText = 'Generate PDF';
+    generatePdfButton.classList.add('generate-pdf-button');
+    generatePdfButton.onclick = saveAsPdf;
+    resultsContainer.appendChild(generatePdfButton);
+
+    document.getElementById('render-choices-button').remove();
+    document.getElementById('sections-container').remove();
+    resultsContainer.style.display = 'block';
+  }
+
+  function createTableHeader() {
+    const container = document.createElement('div');
+    container.classList.add('table-header-container');
+
+    const intervalDiv = document.createElement('div');
+    intervalDiv.classList.add('table-header-interval');
+    intervalDiv.innerText = 'Interval';
+
+    const ascendingDiv = document.createElement('div');
+    ascendingDiv.classList.add('table-header-ascending');
+    ascendingDiv.innerText = 'Ascending';
+
+    const descendingDiv = document.createElement('div');
+    descendingDiv.classList.add('table-header-descending');
+    descendingDiv.innerText = 'Descending';
+
+    container.appendChild(intervalDiv);
+    container.appendChild(ascendingDiv);
+    container.appendChild(descendingDiv);
+
+    return container;
+  }
+
+  function saveAsPdf() {
+    html2canvas(document.body, {
+      onrendered: function (canvas) {
+        const img = canvas.toDataURL("image/png");
+        const doc = new jsPDF();
+        doc.addImage(img, 'JPEG', 0, 0, 180, 150);
+        doc.save('test.pdf');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    populateSongAttributes();
+    const container = document.getElementById('container');
+    const sectionsContainer = document.createElement('div');
+    sectionsContainer.setAttribute('id', 'sections-container');
+    sectionsContainer.appendChild(createTableHeader());
+    for (const interval of INTERVALS) {
+      sectionsContainer.appendChild(createIntervalSection(interval));
+    }
+    container.appendChild(sectionsContainer);
+  });
+</script>
+
+</html>
