@@ -816,11 +816,6 @@
       return container;
     }
 
-    function getResultValues() {
-      const radioInputs = Array.from(document.querySelectorAll('input[type="radio"]:checked'));
-      return radioInputs.map(ri => ri.value);
-    }
-
     function getResultSongs() {
       const radioInputs = Array.from(document.querySelectorAll('input[type="radio"]:checked'));
       const res = {};
