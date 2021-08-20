@@ -4,6 +4,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     .link {
@@ -116,15 +117,13 @@
     }
 
     @media screen and (max-width: 600px) {
-      body {
-        /* background: green; */
-      }
+
       .table-header-container {
         display: none;
       }
 
       .section-container, .result-line-container {
-        display: block;
+        flex-direction: column;
         height: auto;
       }
 
@@ -142,25 +141,16 @@
         display: block;
         font-weight: bolder;
         margin: 1.25em auto;
-        padding: 0.25em;
-        text-align: center;
-        width: 25%;
+        padding: 0.25em 1em;
+        text-transform: uppercase;
       }
 
-      .ascending-songs::before {
-        content: 'Ascending Songs';
+      .ascending-songs::before, .ascending-song::before {
+        content: 'Up';
       }
 
-      .descending-songs::before {
-        content: 'Descending Songs';
-      }
-
-      .ascending-song::before {
-        content: 'Ascending Song';
-      }
-
-      .descending-song::before {
-        content: 'Descending Song';
+      .descending-songs::before, .descending-song::before {
+        content: 'Down';
       }
 
       .descending-songs, .descending-song {
@@ -843,9 +833,10 @@
       return songContainer;
     }
 
-    function createSongsGroup(songs) {
+    function createSongsGroup(songs, intervalDirection) {
       const songsContainer = document.createElement('div');
-      songsContainer.classList.add('songs-container');
+      songsContainer.classList.add('songs-container', `${intervalDirection}-songs`);
+
       for (const song of songs) {
         const songContainer = createSongContainer(song);
         songsContainer.appendChild(songContainer);
@@ -876,10 +867,8 @@
       titleDiv.classList.add('section-title');
       titleDiv.innerText = SECTION_DATA.get(interval).title;
 
-      const ascendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.ascending);
-      ascendingSongsGroup.classList.add('ascending-songs');
-      const descendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.descending);
-      descendingSongsGroup.classList.add('descending-songs');
+      const ascendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.ascending, ASCENDING);
+      const descendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.descending, DESCENDING);
 
       container.appendChild(titleDiv);
       container.appendChild(ascendingSongsGroup);
@@ -954,7 +943,7 @@
       generatePdfButton.innerText = 'Generate PDF';
       generatePdfButton.classList.add('generate-pdf-button');
       generatePdfButton.onclick = saveAsPdf;
-      resultsContainer.appendChild(generatePdfButton);
+      document.body.appendChild(generatePdfButton);
 
       document.getElementById('render-choices-button').remove();
       document.getElementById('sections-container').remove();
@@ -967,15 +956,15 @@
 
       const intervalDiv = document.createElement('div');
       intervalDiv.classList.add('table-header-interval');
-      intervalDiv.innerText = 'Interval';
+      intervalDiv.innerText = 'INTERVAL';
 
       const ascendingDiv = document.createElement('div');
       ascendingDiv.classList.add('table-header-ascending');
-      ascendingDiv.innerText = 'Ascending';
+      ascendingDiv.innerText = 'UP';
 
       const descendingDiv = document.createElement('div');
       descendingDiv.classList.add('table-header-descending');
-      descendingDiv.innerText = 'Descending';
+      descendingDiv.innerText = 'DOWN';
 
       container.appendChild(intervalDiv);
       container.appendChild(ascendingDiv);
@@ -985,24 +974,16 @@
     }
 
     function saveAsPdf() {
-      const pdfResultsContainer = document.createElement('div');
-      const container = document.getElementById('container');
-      const resultsContainer = document.getElementById('results-container');
-      container.appendChild(pdfResultsContainer);
-      pdfResultsContainer.appendChild(resultsContainer);
-      pdfResultsContainer.classList.add('pdf-results-container');
-
-      const generatePdfButton = document.querySelector('.generate-pdf-button');
-      generatePdfButton.classList.add('remove-button');
-      setTimeout( () => {
-        generatePdfButton.classList.remove('remove-button');
-        pdfResultsContainer.classList.remove('pdf-results-container');
-      }, 250);
-      html2canvas(document.querySelector('.pdf-results-container'), {
+      html2canvas(document.getElementById('results-container'), {
         onrendered: function(canvas) {
           const img = canvas.toDataURL("image/png");
           const doc = new jsPDF();
-          doc.addImage(img, 'PNG', 0, 0, 180, 150);
+          if (window.screen.width <= 600) {
+            doc.addImage(img, 'JPEG', 2, 2, 60, 290);
+          }
+          else {
+            doc.addImage(img, 'JPEG', 5, 5, 180, 150);
+          }
           doc.save('Ear-Training-Songs-for-Interval-Recognition.pdf');
         }
       });
