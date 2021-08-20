@@ -59,6 +59,12 @@
     }
 
     .result-title,
+    .result-song-cell,
+    .table-header-interval {
+      background-color: white;
+    }
+
+    .result-title,
     .section-title,
     .table-header-interval {
       width: 30%;
@@ -99,6 +105,67 @@
 
     .songs-container label:hover {
       background-color: #f0e6c9;
+    }
+
+    .remove-button {
+      display: none;
+    }
+
+    .pdf-results-container {
+      padding: 2em 4em;
+    }
+
+    @media screen and (max-width: 600px) {
+      body {
+        /* background: green; */
+      }
+      .table-header-container {
+        display: none;
+      }
+
+      .section-container, .result-line-container {
+        display: block;
+        height: auto;
+      }
+
+      .section-title, .result-title {
+        border-left: 2px solid #eee;
+        font-size: 1.5rem;
+        font-weight: bolder;
+        padding-top: 1rem;
+        width: 100%;
+      }
+
+      .ascending-songs::before, .descending-songs::before, .ascending-song::before, .descending-song::before {
+        background-color: #ccc;
+        border-radius: 3px;
+        display: block;
+        font-weight: bolder;
+        margin: 1.25em auto;
+        padding: 0.25em;
+        text-align: center;
+        width: 25%;
+      }
+
+      .ascending-songs::before {
+        content: 'Ascending Songs';
+      }
+
+      .descending-songs::before {
+        content: 'Descending Songs';
+      }
+
+      .ascending-song::before {
+        content: 'Ascending Song';
+      }
+
+      .descending-song::before {
+        content: 'Descending Song';
+      }
+
+      .descending-songs, .descending-song {
+        padding-bottom: 1.25rem;
+      }
     }
   </style>
 
@@ -267,10 +334,10 @@
       },
     ];
     const MINOR_3RD_DESCENDING_SONGS = [{
-        title: 'Barney & Friends Theme',
+        title: 'The Barney & Friends Theme',
       },
       {
-        title: 'Can You Feel the Love Tonight ? (Elton John)',
+        title: 'Can You Feel the Love Tonight? (Elton John)',
       },
       {
         title: 'Frosty the Snowman',
@@ -463,6 +530,9 @@
       {
         title: 'The Way You Look Tonight',
       },
+      {
+        title: 'Easy to Love (Cole Porter)',
+      },
     ];
     const MINOR_6TH_ASCENDING_SONGS = [{
         title: 'Black Orpheus (Theme)',
@@ -629,44 +699,44 @@
         title: 'The Christmas Song(Nat King Cole / Mel Tormé)',
       },
       {
-        title: 'Blue Bossa(Kenny Dorham)',
+        title: 'Blue Bossa (Kenny Dorham)',
       },
       {
         title: 'Let It Snow',
       },
       {
-        title: 'My Sharona(The Knack)',
+        title: 'My Sharona (The Knack)',
       },
       {
         title: 'Singin’ in the Rain',
       },
       {
-        title: 'Somewhere Over the Rainbow(The Wizard of Oz)',
+        title: 'Somewhere Over the Rainbow (The Wizard of Oz)',
       },
       {
-        title: 'Starman(David Bowie)',
+        title: 'Starman (David Bowie)',
       },
       {
-        title: 'Sweet Child O’ Mine(Guns N’ Roses)',
+        title: 'Sweet Child O’ Mine (Guns N’ Roses)',
       },
       {
         title: 'When You Wish Upon a Star',
       },
     ];
     const PERFECT_8TH_DESCENDING_SONGS = [{
-        title: 'Bulls on Parade(Rage Against the Machine)',
+        title: 'Bulls on Parade (Rage Against the Machine)',
       },
       {
-        title: 'My Sharona(The Knack)',
+        title: 'My Sharona (The Knack)',
       },
       {
-        title: 'Nessun Dorma from Turandot(Puccini)',
+        title: 'Nessun Dorma from Turandot (Puccini)',
       },
       {
-        title: 'Salt Peanuts(Dizzy Gillespie)',
+        title: 'Salt Peanuts (Dizzy Gillespie)',
       },
       {
-        title: 'Someone to Watch Over Me(Gershwin)',
+        title: 'Someone to Watch Over Me (Gershwin)',
       },
       {
         title: 'Willow Weep for Me',
@@ -807,7 +877,9 @@
       titleDiv.innerText = SECTION_DATA.get(interval).title;
 
       const ascendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.ascending);
+      ascendingSongsGroup.classList.add('ascending-songs');
       const descendingSongsGroup = createSongsGroup(SECTION_DATA.get(interval).songs.descending);
+      descendingSongsGroup.classList.add('descending-songs');
 
       container.appendChild(titleDiv);
       container.appendChild(ascendingSongsGroup);
@@ -835,13 +907,13 @@
       titleDiv.innerText = SECTION_DATA.get(interval).title;
 
       const ascendingSongCell = document.createElement('div');
-      ascendingSongCell.classList.add('result-song-cell');
+      ascendingSongCell.classList.add('result-song-cell', 'ascending-song');
       if (ascendingSong) {
         ascendingSongCell.innerText = ascendingSong.title;
       }
 
       const descendingSongCell = document.createElement('div');
-      descendingSongCell.classList.add('result-song-cell');
+      descendingSongCell.classList.add('result-song-cell', 'descending-song');
       if (descendingSong) {
         descendingSongCell.innerText = descendingSong.title;
       }
@@ -913,12 +985,25 @@
     }
 
     function saveAsPdf() {
-      html2canvas(document.body, {
+      const pdfResultsContainer = document.createElement('div');
+      const container = document.getElementById('container');
+      const resultsContainer = document.getElementById('results-container');
+      container.appendChild(pdfResultsContainer);
+      pdfResultsContainer.appendChild(resultsContainer);
+      pdfResultsContainer.classList.add('pdf-results-container');
+
+      const generatePdfButton = document.querySelector('.generate-pdf-button');
+      generatePdfButton.classList.add('remove-button');
+      setTimeout( () => {
+        generatePdfButton.classList.remove('remove-button');
+        pdfResultsContainer.classList.remove('pdf-results-container');
+      }, 250);
+      html2canvas(document.querySelector('.pdf-results-container'), {
         onrendered: function(canvas) {
           const img = canvas.toDataURL("image/png");
           const doc = new jsPDF();
-          doc.addImage(img, 'JPEG', 0, 0, 180, 150);
-          doc.save('test.pdf');
+          doc.addImage(img, 'PNG', 0, 0, 180, 150);
+          doc.save('Ear-Training-Songs-for-Interval-Recognition.pdf');
         }
       });
     }
